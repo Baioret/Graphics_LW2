@@ -10,21 +10,26 @@ GLuint VBO; // 32-битовое беззнаковое целое
 
 GLuint gWorldLocation;
 
+// исходный код вершинного шейдера
 const char* VScode =
 "#version 330 core\n"
 "layout (location = 0) in vec3 Position;\n"
+"out vec4 Color;\n" // выходное значение
 "uniform mat4 gWorld;\n"
 "void main()\n"
 "{\n"
     "gl_Position = gWorld * vec4(Position, 1.0);\n"
+    "Color = vec4(clamp(Position, 0.0, 1.0), 1.0);\n"
 "};\n";
 
+// исходный код пиксельного (фрагментного) шейдера
 const char* PScode =
 "#version 330 core\n"
-"out vec4 FragColor;\n"
+"in vec4 Color;\n" // входное значение
+"out vec4 FragColor;\n" // выходное значение
 "void main()\n"
 "{\n"
-    "FragColor = vec4(0.3, 0.8, 0.6, 1.0);\n"
+    "FragColor = Color;\n"
 "}\n";
 
 void RenderSceneCB()
@@ -34,14 +39,37 @@ void RenderSceneCB()
     static float Scale = 0.0f;
     Scale += 0.001f;
 
-    glm::mat4 Matrix(
-        1.0f, 0.0f, 0.0f, sinf(Scale),
+    glm::mat4 MatrixYZ(
+        cosf(Scale), 0.0f, -sinf(Scale), sinf(Scale),
         0.0f, 1.0f, 0.0f, 0.0f,
+        sinf(Scale), 0.0f, cosf(Scale), 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+
+    glm::mat4 MatrixXZ(
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, cosf(Scale), -sinf(Scale), 0.0f,
+        0.0f, sinf(Scale), cosf(Scale), 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+
+    glm::mat4 MatrixXY(
+        cosf(Scale), -sinf(Scale), 0.0f, 0.0f,
+        sinf(Scale), cosf(Scale), 0.0f, 0.0f,
         0.0f, 0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f
     );
 
-    glUniformMatrix4fv(gWorldLocation, 1, GL_TRUE, &Matrix[0][0]);
+    glm::mat4 MatrixScale(
+        sinf(Scale), 0.0f, 0.0f, 0.0f,
+        0.0f, cosf(Scale), 0.0f, 0.0f,
+        0.0f, 0.0f, sinf(Scale), 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    );
+
+    glm::mat4 ResMatrix = /*MatrixYZ + MatrixXZ +*/ MatrixXY + MatrixScale; // вращение отн-но Oz + изменение масштаба
+
+    glUniformMatrix4fv(gWorldLocation, 1, GL_TRUE, &ResMatrix[0][0]);
 
     glEnableVertexAttribArray(0);
     glColor3f(0.3f, 0.8f, 0.6f);
@@ -119,17 +147,6 @@ int main(int argc, char** argv)
         {-1.0f, -1.0f, 0.0f},
         {1.0f, 0.0f, 0.0f}
     }; // на 90 град. против часовой
-
-    glm::vec4 Vector(
-        10.0f, 10.0f, 1.0f, 1.0f
-    );
-
-    glm::mat4 Matrix(
-        1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 1.0f
-    );
 
     GLuint ShaderProgram = glCreateProgram();
     CreateShader(ShaderProgram, VScode, GL_VERTEX_SHADER);
