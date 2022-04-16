@@ -1,9 +1,9 @@
-﻿#include <iostream>
-#include <GL/glew.h>
-#include <GL/freeglut.h>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
+﻿
+#include "Source.cpp"
+
+Pipeline p;
+
+GLuint IBO; // index buffer object
 
 GLuint VBO; // 32-битовое беззнаковое целое
 // VBO - Vertex_Buffer_Object
@@ -32,15 +32,17 @@ const char* PScode =
     "FragColor = Color;\n"
 "}\n";
 
+
 void RenderSceneCB()
 {
     glClear(GL_COLOR_BUFFER_BIT);
-
+    
     static float Scale = 0.0f;
     Scale += 0.001f;
-
+    
+    // матрицы
     glm::mat4 MatrixYZ(
-        cosf(Scale), 0.0f, -sinf(Scale), sinf(Scale),
+        cosf(Scale), 0.0f, -sinf(Scale), 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
         sinf(Scale), 0.0f, cosf(Scale), 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f
@@ -67,14 +69,19 @@ void RenderSceneCB()
         0.0f, 0.0f, 0.0f, 1.0f
     );
 
-    glm::mat4 ResMatrix = /*MatrixYZ + MatrixXZ +*/ MatrixXY + MatrixScale; // вращение отн-но Oz + изменение масштаба
+    glm::mat4 ResMatrix = MatrixYZ;
 
-    glUniformMatrix4fv(gWorldLocation, 1, GL_TRUE, &ResMatrix[0][0]);
+    p.Scale(sinf(Scale * 0.1f), sinf(Scale * 0.1f), sinf(Scale * 0.1f));
+    p.WorldPos(sinf(Scale), 0.0f, 0.0f);
+    p.Rotate(sinf(Scale) * 90.0f, sinf(Scale) * 90.0f, sinf(Scale) * 90.0f);
+
+    glUniformMatrix4fv(gWorldLocation, 1, GL_TRUE, (const GLfloat*)p.GetTrans());
 
     glEnableVertexAttribArray(0);
     glColor3f(0.3f, 0.8f, 0.6f);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    //glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
     glDisableVertexAttribArray(0);
 
     glutSwapBuffers();
@@ -142,11 +149,17 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    glm::vec3 Vertices[3]{
-        {-1.0f, 1.0f, 0.0f},
+    glm::vec3 Vertices[4]{
         {-1.0f, -1.0f, 0.0f},
-        {1.0f, 0.0f, 0.0f}
-    }; // на 90 град. против часовой
+        {0.0f, -1.0f, 1.0f},
+        {1.0f, -1.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f}
+    };
+
+    unsigned int Indices[] = { 0, 3, 1,
+                           1, 3, 2,
+                           2, 3, 0,
+                           0, 2, 1 };
 
     GLuint ShaderProgram = glCreateProgram();
     CreateShader(ShaderProgram, VScode, GL_VERTEX_SHADER);
@@ -154,10 +167,12 @@ int main(int argc, char** argv)
     LinkShader(ShaderProgram);
 
     glGenBuffers(1, &VBO);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &IBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
 
     glutDisplayFunc(RenderSceneCB);
     glutIdleFunc(RenderSceneCB);
