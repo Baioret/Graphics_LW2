@@ -71,9 +71,16 @@ void RenderSceneCB()
 
     glm::mat4 ResMatrix = MatrixYZ;
 
+    Vector3 CameraPos = Vector3(1.0f, 1.0f, -3.0f);
+    Vector3 CameraTarget = Vector3(0.45f, 0.0f, 1.0f);
+    Vector3 CameraUp = Vector3(0.0f, 1.0f, 0.0f);
+
     p.Scale(sinf(Scale * 0.1f), sinf(Scale * 0.1f), sinf(Scale * 0.1f));
     p.WorldPos(sinf(Scale), 0.0f, 0.0f);
     p.Rotate(sinf(Scale) * 90.0f, sinf(Scale) * 90.0f, sinf(Scale) * 90.0f);
+    p.SetPerspectiveProj(30.0f, GLUT_WINDOW_WIDTH, GLUT_WINDOW_HEIGHT, 1.0f, 100.0f);
+    p.SetCamera(CameraPos, CameraTarget, CameraUp);
+
 
     glUniformMatrix4fv(gWorldLocation, 1, GL_TRUE, (const GLfloat*)p.GetTrans());
 
@@ -140,7 +147,7 @@ int main(int argc, char** argv)
     glutInitWindowPosition(100, 100); // начальное расположение окна
     glutInitWindowSize(1024, 768); // начальный размер окна
     glutCreateWindow("Tutorial 01");
-    glClearColor(0.0f, 0.0f, 1.0f, 0.0f); // указывает четкие значения для буферов цветов (очистка буферов цветов)
+    glClearColor(0.3f, 0.8f, 0.6f, 0.0f); // указывает четкие значения для буферов цветов (очистка буферов цветов)
 
     GLenum res = glewInit(); //GLenum -- 32-битовое беззнаковое целое
     if (res != GLEW_OK)
